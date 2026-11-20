@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Espaces verts de Tlemcen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: atlas municipal, calme et précis, au service d'un inventaire de terrain.
+   IDEA: une planche d'atlas botanique : le plan de la ville, ses quartiers teintés, chaque jardin pointé et numéroté.
+   PICTURE: le plan interactif des 176 espaces verts, zones de quartiers en lavis vert, points colorés par état.
+   COLOUR and TYPE: vert cèdre profond dominant, papier vert pâle, accent ocre de Mansourah ; Archivo 800 pour les titres, Source Sans 3 pour le texte.
+   LAYOUT: bandeau vert, chiffres clés, carte + fiche côte à côte, puis quartiers, galerie, sources ; tout s'empile sous 900px. */
+:root{color-scheme:light dark;
+ --bg:light-dark(#f2f5ec,#0f1914);--card:light-dark(#ffffff,#16241c);--ink:light-dark(#13201a,#e6eee6);
+ --mute:light-dark(#4d5e54,#9fb1a5);--line:light-dark(#d5ddcf,#2a3b31);--deep:light-dark(#17402c,#0b2618);
+ --deepink:#eef5ea;--ochre:light-dark(#b8731f,#e0a24f);--zone:light-dark(#cfe0bf,#21402c);--zone2:light-dark(#b9d2a4,#2c5238);
+ --E:#1f7a3f;--B:#80b84c;--M:#e2a33a;--D:#c4422d}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Source Sans 3",system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Archivo,system-ui,sans-serif;line-height:1.05;text-wrap:balance;margin:0}
+h1{font-size:clamp(32px,5vw,52px);font-weight:800}h2{font-size:clamp(26px,3.4vw,36px);font-weight:800}h3{font-size:19px;font-weight:600}
+a{color:inherit}
+.band{padding:clamp(28px,4vw,56px) max(5vw,16px)}.wrap{max-width:1240px;margin:0 auto}
+header{background:var(--deep);color:var(--deepink)}
+nav{display:flex;flex-wrap:wrap;gap:6px 22px;align-items:center;max-width:1240px;margin:0 auto;padding:14px max(5vw,16px)}
+nav b{font-family:Archivo;font-size:17px;margin-right:auto}
+nav a{text-decoration:none;opacity:.85;padding:10px 0}nav a:hover{opacity:1;text-decoration:underline}
+.hero{background:var(--deep);color:var(--deepink);padding:8px max(5vw,16px) 30px}
+.hero p{max-width:68ch;margin:12px 0 0;opacity:.9;font-size:17px}
+.kpis{display:flex;flex-wrap:wrap;gap:12px 36px;margin-top:22px}
+.kpis div{font-size:14px;opacity:.9}.kpis strong{display:block;font:800 30px/1.1 Archivo;color:#f3d29a}
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+input,select,button{font:inherit;font-size:16px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;min-height:44px;padding:0 12px}
+input:focus-visible,select:focus-visible,button:focus-visible,.pt:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
+#q{flex:1 1 220px}
+.chip{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.chip i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.chip[aria-pressed=false]{opacity:.45;text-decoration:line-through}
+.count{color:var(--mute);font-size:14px}
+.atlas{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start}
+.mapbox{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;height:min(78vh,760px);touch-action:none}
+#map{width:100%;height:100%;display:block;cursor:grab}#map.drag{cursor:grabbing}
+.zone{fill:var(--zone);stroke:var(--zone);stroke-linejoin:round;opacity:.85}
+.zone.on{fill:var(--zone2);stroke:var(--zone2)}
+.zl{font:600 15px Archivo,system-ui,sans-serif;fill:var(--ink);opacity:.75;paint-order:stroke;stroke:var(--card);stroke-width:5;pointer-events:none}
+.pt{stroke:var(--card);cursor:pointer}.pt.sel{stroke:var(--ink)}
+.ring{fill:none;stroke:var(--ochre);pointer-events:none}
+.zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px}
+.fonds{position:absolute;left:10px;top:10px;display:flex;flex-wrap:wrap;gap:0;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;max-width:calc(100% - 76px)}
+.fonds button{border:0;border-radius:0;min-height:40px;font-size:14px;padding:0 12px;background:transparent}
+.fonds button[aria-pressed=true]{background:var(--deep);color:var(--deepink)}
+#map.raster .zone{display:none}
+.mapbox.raster{background:#2b2b24}
+.grad{display:block;height:10px;border-radius:3px;margin:6px 0 2px;background:linear-gradient(90deg,#f3efe4,#e6dcb8,#c7d79a,#8dbf63,#4c9a3f,#1f6b2e)}
+.wcl{display:grid;grid-template-columns:repeat(2,minmax(0,auto));gap:2px 12px;margin-top:6px}
+.wcl span{margin:0}
+.src{display:block;color:var(--mute);font-size:12px;margin-top:4px}
+.zoom button{width:44px;padding:0;font-weight:600}
+.legend{position:absolute;left:10px;bottom:10px;max-width:calc(100% - 20px);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px}
+.legend span{display:inline-flex;align-items:center;gap:6px;margin-right:10px}.legend i{width:10px;height:10px;border-radius:50%}
+.scale{display:block;margin-top:6px;color:var(--mute)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.panel .ph{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:var(--zone);cursor:zoom-in;display:block}
+.panel h3{margin:14px 0 4px;font-size:22px}
+.tag{display:inline-block;font-size:13px;font-weight:600;padding:2px 10px;border-radius:99px;color:#fff;margin-right:6px}
+dl{display:grid;grid-template-columns:8.5em minmax(0,1fr);gap:6px 12px;margin:14px 0;font-size:15px}
+dt{color:var(--mute)}dd{margin:0}
+.note{font-size:14px;color:var(--mute)}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.btns a,.btns button{display:inline-flex;align-items:center;text-decoration:none;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.q-band{background:var(--card);border-block:1px solid var(--line)}
+.qrow{display:grid;grid-template-columns:minmax(0,15em) minmax(0,1fr) 7em 6em 5em;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.qrow:hover{background:color-mix(in srgb,var(--zone) 40%,transparent)}
+.qrow.head{cursor:default;font-size:13px;color:var(--mute);background:none}
+.bar{display:flex;height:16px;border-radius:4px;overflow:hidden;background:var(--line)}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-top:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;text-align:left;padding:0;min-height:0;display:flex;flex-direction:column;justify-content:flex-start;width:100%}
+.card img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--zone)}
+.card div{padding:8px 10px 10px;font-size:14px}.card b{display:block;font-size:15px;line-height:1.25}
+.more{margin:18px auto 0;display:block}
+dialog{border:0;border-radius:14px;padding:0;max-width:min(920px,94vw);background:var(--card);color:var(--ink)}
+dialog::backdrop{background:#0009}dialog img{width:100%;display:block}
+dialog .cap{padding:12px 16px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+footer{background:var(--deep);color:var(--deepink)}footer p{max-width:75ch;opacity:.9}
+.empty{padding:30px;text-align:center;color:var(--mute)}
+@media(max-width:900px){.atlas{grid-template-columns:minmax(0,1fr)}.mapbox{height:70vh}}
+@media(max-width:600px){.qrow{grid-template-columns:minmax(0,1fr) 5.5em;row-gap:4px}.qrow .bar{grid-column:1/-1;order:3}.qrow .hide{display:none}dl{grid-template-columns:7em minmax(0,1fr)}}
+@media(prefers-reduced-motion:no-preference){.ring{animation:pulse 1.6s ease-out infinite}@keyframes pulse{from{stroke-opacity:1}to{stroke-opacity:.15}}}
+</style>
+</head>
+<body>
+<header>
+ <nav aria-label="Navigation"><b>Atlas des espaces verts · Tlemcen</b><a href="#carte">Carte</a><a href="#quartiers">Quartiers</a><a href="#galerie">Galerie</a><a href="#sources">Sources</a></nav>
+</header>
+<section class="hero">
+ <div class="wrap">
+  <h1>Un jardin sur trois de Tlemcen est en état dégradé</h1>
+  <p>Inventaire de terrain des espaces verts de la commune : 176 sites localisés, photographiés et décrits. Cliquez un point pour lire sa fiche, filtrez par quartier ou par état.</p>
+  <div class="kpis" id="kpis"></div>
+ </div>
+</section>
+
+<section class="band" id="carte">
+ <div class="wrap">
+  <div class="tools" role="search">
+   <input id="q" type="search" placeholder="Rechercher un nom, un code, une espèce…" aria-label="Rechercher">
+   <select id="fq" aria-label="Quartier"><option value="">Tous les quartiers</option></select>
+   <select id="fc" aria-label="Classement"><option value="">Tous les classements</option></select>
+   <span id="chips"></span>
+   <span class="count" id="count"></span>
+  </div>
+  <div class="atlas">
+   <div class="mapbox">
+    <svg id="map" role="img" aria-label="Plan des espaces verts de Tlemcen"></svg>
+    <div class="fonds" role="group" aria-label="Fond de carte"><button data-f="plan" aria-pressed="true">Plan</button><button data-f="s2" aria-pressed="false">Satellite</button><button data-f="ndvi" aria-pressed="false">NDVI</button><button data-f="wc" aria-pressed="false">Occupation</button></div>
+    <div class="zoom"><button id="zin" aria-label="Zoomer">+</button><button id="zout" aria-label="Dézoomer">−</button><button id="zre" aria-label="Vue entière">⤢</button></div>
+    <div class="legend" id="legend"></div>
+   </div>
+   <article class="panel" id="panel" aria-live="polite"></article>
+  </div>
+ </div>
+</section>
+
+<section class="band q-band" id="quartiers">
+ <div class="wrap">
+  <h2>Aboutechfine et Oudjlida ont moins d'1 m² de verdure par habitant</h2>
+  <p class="note">Barre : répartition des sites cartographiés par état. Surface et ratio : Tableau 05 du mémoire. Cliquez un quartier pour le filtrer sur la carte.</p>
+  <div id="qtable"></div>
+ </div>
+</section>
+
+<section class="band" id="galerie">
+ <div class="wrap">
+  <h2>Galerie des sites</h2>
+  <p class="note" id="gnote"></p>
+  <div class="grid" id="grid"></div>
+  <button class="more" id="more">Afficher plus</button>
+ </div>
+</section>
+
+<footer class="band" id="sources">
+ <div class="wrap">
+  <h2>Sources et notes</h2>
+  <p>Données : mémoire de Karaouzene Sarra (INSP), Tableau 06 (inventaire de 176 sites, coordonnées, attributs et photos) et Tableau 05 (synthèse par quartier). Les photos sont celles du mémoire.</p>
+  <p>Certaines lignes du Tableau 06 regroupent plusieurs espaces (ex. « 550 logements (14 espaces verts) ») : on compte ainsi 176 sites pour 217 espaces. La ligne codée « EVI1665 » dans le mémoire a été lue comme EVI165. </p>
+  <p>Fonds de carte produits dans Google Earth Engine et calés sur l'emprise du site : image Copernicus Sentinel-2 (médiane été 2025, nuages masqués), NDVI Sentinel-2 (médiane printemps 2025) et ESA WorldCover 10 m. Pixel de 10 m : les petits squares de quelques dizaines de m² n'y sont pas visibles un par un.</p>
+ </div>
+</footer>
+
+<dialog id="dlg"><img id="dimg" alt=""><div class="cap"><span id="dcap"></span><button id="dclose">Fermer</button></div></dialog>
+
+<script>
+{
+const ETATS=[["Excellent","var(--E)"],["Bon","var(--B)"],["Moyen","var(--M)"],["Dégradé","var(--D)"]];
+const COL=Object.fromEntries(ETATS);
+const Q={A:["Plateau de Lala-Seti",6,57300,398,143.97,66.67],B:["Birouana / El Hartoun / El Kalaa",14,68908,29036,2.37,85.71],
+C:["Centre-ville / Sidi Saïd",42,37589,31960,2.40,38.10],D:["Les Cerisiers / Bab Wahran",46,39105,31960,2.40,32.61],
+E:["Les Oliviers / entrée N22",19,36128,14183,2.55,52.63],F:["El Kiffane",30,23183,14333,1.62,53.33],
+G:["Aboutechfine",5,4030,15763,0.26,40],H:["Oudjlida",8,9603,18068,0.53,37.50],
+I:["Boudjlida (Abdelmoumen Ali)",39,37980,16790,2.26,20.51],J:["El Koudia (Erroustoumiyin)",8,23451,17135,1.37,12.50]};
+const LBL={A:["Lala-Seti",672,1215,"start"],B:["Birouana · El Hartoun",860,1060,"middle"],C:["Centre-ville",700,748,"middle"],
+D:["Les Cerisiers",490,940,"end"],E:["Les Oliviers",300,565,"end"],F:["El Kiffane",212,700,"end"],G:["Aboutechfine",582,425,"start"],
+H:["Oudjlida",508,95,"start"],I:["Boudjlida",172,106,"middle"],J:["El Koudia",172,440,"middle"]};
+const $=id=>document.getElementById(id);
+const fmt=n=>Math.round(n).toLocaleString("fr-FR");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let D=[],G=null,sel=null,shown=[],gN=24;
+const st={q:"",quart:"",cl:"",etats:new Set(ETATS.map(e=>e[0]))};
+const svg=$("map");let vb=null,full=null;
+
+function filt(){
+ const t=st.q.trim().toLowerCase();
+ shown=D.filter(d=>(!st.quart||d.q===st.quart)&&(!st.cl||d.cl===st.cl)&&st.etats.has(d.e)&&
+  (!t||(d.c+" "+d.n+" "+d.es+" "+d.mo).toLowerCase().includes(t)));
+ $("count").textContent=shown.length+" site"+(shown.length>1?"s":"")+" affiché"+(shown.length>1?"s":"");
+ drawPts();gN=24;drawGrid();
+ document.querySelectorAll(".zone").forEach(z=>z.classList.toggle("on",z.dataset.q===st.quart));
+}
+
+function px(){return 1/Math.min(svg.clientWidth/vb[2]||1,svg.clientHeight/vb[3]||1)}
+function r(d){return Math.max(4,Math.min(12,Math.sqrt(d.s)/8))*px()}
+function drawPts(){
+ const g=$("pts");if(!g)return;
+ const ids=new Set(shown.map(d=>d.c));
+ g.innerHTML=D.filter(d=>ids.has(d.c)).sort((a,b)=>b.s-a.s).map(d=>
+  `<circle class="pt${sel&&sel.c===d.c?" sel":""}" data-c="${d.c}" cx="${d.x}" cy="${d.y}" r="${r(d).toFixed(2)}" fill="${COL[d.e]}" stroke-width="${(1.5*px()).toFixed(2)}" tabindex="0" role="button" aria-label="${esc(d.c+" "+d.n)}"><title>${esc(d.c+" – "+d.n)}</title></circle>`).join("");
+ const ring=$("ring");
+ if(sel){ring.setAttribute("cx",sel.x);ring.setAttribute("cy",sel.y);ring.setAttribute("r",(r(sel)+6*px()).toFixed(2));ring.setAttribute("stroke-width",(3*px()).toFixed(2));ring.style.display=""}
+ else ring.style.display="none";
+}
+
+function setVB(v){
+ vb=v;svg.setAttribute("viewBox",v.map(n=>n.toFixed(1)).join(" "));
+ svg.setAttribute("preserveAspectRatio","xMidYMid meet");
+ const u=px();svg.querySelectorAll(".zl").forEach(t=>{t.style.fontSize=(13*u).toFixed(1)+"px";t.style.strokeWidth=(4*u).toFixed(1)});
+ svg.querySelectorAll(".zone").forEach(z=>z.style.strokeWidth=(22*u).toFixed(1));
+ const sb=Math.round(500/G.m_per_unit);
+ $("legend").querySelector(".scale").innerHTML=`<svg width="${(sb/u).toFixed(0)}" height="8" style="vertical-align:middle"><rect width="100%" height="4" y="2" fill="currentColor"/></svg> 500 m`;
+ drawPts();
+}
+function zoom(f,cx,cy){
+ const [x,y,w,h]=vb;cx=cx??x+w/2;cy=cy??y+h/2;
+ const nw=Math.min(full[2]*1.2,Math.max(60,w*f)),k=nw/w;
+ setVB([cx-(cx-x)*k,cy-(cy-y)*k,w*k,h*k]);
+}
+function toSvg(ev){const p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;return p.matrixTransform(svg.getScreenCTM().inverse())}
+
+function drawMap(){
+ const z=Object.entries(G.zones);
+ svg.innerHTML=`<image id="fond" x="0" y="0" width="${G.W}" height="${G.H}" preserveAspectRatio="none" style="display:none"/><g>${z.map(([q,o])=>`<path class="zone" data-q="${q}" d="${o.d}"/>`).join("")}</g>
+ <g>${Object.entries(LBL).map(([q,[t,x,y,a]])=>`<text class="zl" data-q="${q}" x="${x}" y="${y}" text-anchor="${a}">${t}</text>`).join("")}</g>
+ <g id="pts"></g><circle id="ring" class="ring"/>`;
+ full=[0,0,G.W,G.H];setVB(full.slice());
+}
+
+function show(d,center){
+ sel=d;drawPts();
+ const surf=fmt(d.s)+" m²";
+ $("panel").innerHTML=`<img class="ph" src="${d.c}_v.jpg" alt="Photo de ${esc(d.n)}" id="ph">
+ <h3>${esc(d.n)}</h3>
+ <div><span class="tag" style="background:${COL[d.e]}">${esc(d.e)}</span><span class="note">${d.c} · ${esc(Q[d.q][0])}</span></div>
+ <dl><dt>Superficie</dt><dd>${surf}</dd><dt>Classement</dt><dd>${esc(d.cl)}</dd>
+ <dt>Éclairage</dt><dd>${esc(d.ec)}</dd><dt>Irrigation</dt><dd>${d.ir==="oui"?"Système présent":"Non signalé"}</dd>
+ <dt>Mobilier</dt><dd>${esc(d.mo)}</dd><dt>Espèces</dt><dd>${esc(d.es)}</dd>
+ <dt>Coordonnées</dt><dd>${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}</dd></dl>
+ <p>${esc(d.ex)}</p>
+ <div class="btns"><button id="big">Agrandir la photo</button><a href="https://www.google.com/maps?q=${d.lat},${d.lon}" target="_blank" rel="noopener">Voir sur Google Maps</a></div>
+ <p class="note">Source : mémoire, Tableau 06, p. ${d.p}.</p>`;
+ $("ph").onclick=$("big").onclick=()=>openPhoto(d);
+ if(center){const w=Math.min(vb[2],260),h=w*vb[3]/vb[2];setVB([d.x-w/2,d.y-h/2,w,h]);}
+}
+function openPhoto(d){
+ $("dimg").src=d.c+".jpg";$("dimg").alt="Photo de "+d.n;
+ $("dcap").textContent=d.c+" – "+d.n;try{$("dlg").showModal()}catch(e){$("dlg").setAttribute("open","")}
+}
+
+function drawGrid(){
+ $("gnote").textContent=shown.length?`${shown.length} sites selon les filtres de la carte.`:"";
+ $("grid").innerHTML=shown.length?shown.slice(0,gN).map(d=>`<button class="card" data-c="${d.c}"><img loading="lazy" src="${d.c}_v.jpg" alt=""><div><b>${esc(d.n)}</b>${d.c} · ${fmt(d.s)} m² · <span style="color:${COL[d.e]};font-weight:600">${d.e}</span></div></button>`).join("")
+  :`<p class="empty">Aucun site ne correspond. Élargissez la recherche ou réactivez un état.</p>`;
+ $("more").style.display=shown.length>gN?"block":"none";
+}
+
+function drawQuart(){
+ const rows=Object.keys(Q).map(k=>{
+  const pts=D.filter(d=>d.q===k),n=pts.length,c={};pts.forEach(d=>c[d.e]=(c[d.e]||0)+1);
+  const bar=ETATS.map(([e,col])=>c[e]?`<i title="${e} : ${c[e]}" style="width:${c[e]/n*100}%;background:${col}"></i>`:"").join("");
+  return `<div class="qrow" data-q="${k}" role="button" tabindex="0"><span><b>${esc(Q[k][0])}</b><br><span class="note">${n} sites · ${Q[k][1]} espaces</span></span><span class="bar">${bar}</span><span class="num hide">${fmt(Q[k][2])} m²</span><span class="num"><b>${Q[k][4].toFixed(2).replace(".",",")}</b> m²/hab</span><span class="num hide">${String(Q[k][5]).replace(".",",")} %</span></div>`}).join("");
+ $("qtable").innerHTML=`<div class="qrow head"><span>Quartier</span><span>Sites par état</span><span class="num hide">Surface</span><span class="num">Ratio</span><span class="num hide">Classés</span></div>`+rows;
+}
+
+function kpis(){
+ const tot=D.reduce((a,d)=>a+d.s,0),deg=D.filter(d=>d.e==="Dégradé").length;
+ $("kpis").innerHTML=`<div><strong>176</strong>sites inventoriés (217 espaces)</div><div><strong>${(tot/10000).toFixed(1).replace(".",",")} ha</strong>de surface verte</div><div><strong>${deg}</strong>sites dégradés (${Math.round(deg/D.length*100)} %)</div><div><strong>0,26 m²</strong>par habitant à Aboutechfine</div>`;
+}
+
+function controls(){
+ Object.keys(Q).forEach(k=>$("fq").insertAdjacentHTML("beforeend",`<option value="${k}">${esc(Q[k][0])}</option>`));
+ [...new Set(D.map(d=>d.cl))].sort().forEach(c=>$("fc").insertAdjacentHTML("beforeend",`<option>${esc(c)}</option>`));
+ $("chips").innerHTML=ETATS.map(([e,c])=>`<button class="chip" aria-pressed="true" data-e="${e}"><i style="background:${c}"></i>${e}</button>`).join(" ");
+ $("legend").innerHTML=ETATS.map(([e,c])=>`<span><i style="background:${c}"></i>${e}</span>`).join("")+`<span class="scale"></span><span class="note" style="display:block">Taille du point : superficie</span><div id="lfond"></div>`;
+}
+
+function bind(){
+ $("q").addEventListener("input",e=>{st.q=e.target.value;filt()});
+ $("fq").addEventListener("change",e=>{st.quart=e.target.value;filt();fitQuart()});
+ $("fc").addEventListener("change",e=>{st.cl=e.target.value;filt()});
+ $("chips").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;
+  const on=b.getAttribute("aria-pressed")==="true";b.setAttribute("aria-pressed",String(!on));
+  on?st.etats.delete(b.dataset.e):st.etats.add(b.dataset.e);filt()});
+ const pick=e=>{const c=e.target.closest("[data-c]");if(c){show(D.find(d=>d.c===c.dataset.c),e.currentTarget===$("grid"));
+  if(e.currentTarget===$("grid"))$("carte").scrollIntoView({behavior:"smooth"})}};
+ svg.addEventListener("click",e=>{if(!moved)pick(e)});
+ svg.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();pick(e)}});
+ $("grid").addEventListener("click",pick);
+ $("more").onclick=()=>{gN+=24;drawGrid()};
+ const qpick=e=>{const r=e.target.closest(".qrow[data-q]");if(!r)return;st.quart=r.dataset.q;$("fq").value=r.dataset.q;filt();fitQuart();$("carte").scrollIntoView({behavior:"smooth"})};
+ $("qtable").addEventListener("click",qpick);$("qtable").addEventListener("keydown",e=>{if(e.key==="Enter")qpick(e)});
+ document.querySelector(".fonds").addEventListener("click",e=>{const b=e.target.closest("button[data-f]");if(b)setFond(b.dataset.f)});
+ $("zin").onclick=()=>zoom(0.6);$("zout").onclick=()=>zoom(1/0.6);$("zre").onclick=()=>setVB(full.slice());
+ $("dclose").onclick=()=>$("dlg").close();$("dlg").addEventListener("click",e=>{if(e.target===$("dlg"))$("dlg").close()});
+ svg.addEventListener("wheel",e=>{e.preventDefault();const p=toSvg(e);zoom(e.deltaY<0?0.8:1.25,p.x,p.y)},{passive:false});
+ let drag=null,moved=false;
+ svg.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY,v:vb.slice()};moved=false});
+ svg.addEventListener("pointermove",e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+  if(Math.abs(dx)+Math.abs(dy)>4){moved=true;svg.classList.add("drag")}
+  if(moved){const k=Math.max(drag.v[2]/svg.clientWidth,drag.v[3]/svg.clientHeight);setVB([drag.v[0]-dx*k,drag.v[1]-dy*k,drag.v[2],drag.v[3]])}});
+ const up=()=>{drag=null;svg.classList.remove("drag")};
+ svg.addEventListener("pointerup",up);svg.addEventListener("pointerleave",up);
+ const ro=new ResizeObserver(()=>{if(vb)setVB(vb)});ro.observe(svg);
+}
+const FONDS={
+ plan:"",
+ s2:`<div class="src">Fond : Copernicus Sentinel-2, couleurs naturelles, été 2025</div>`,
+ ndvi:`<div class="grad"></div><div class="note">NDVI 0 (sol nu) → 0,7 (végétation dense)</div><div class="src">Sentinel-2, printemps 2025</div>`,
+ wc:`<div class="wcl">${[["#fa0000","Bâti 43 %"],["#ffff4c","Prairie 25 %"],["#006400","Arbres 13 %"],["#f096ff","Cultures 10 %"],["#ffbb22","Arbustes 6 %"],["#b4b4b4","Sol nu 2 %"]].map(([c,t])=>`<span><i style="background:${c};border-radius:2px"></i>${t}</span>`).join("")}</div><div class="src">ESA WorldCover 10 m · part de l'emprise</div>`};
+const IMG={s2:"fonds/s2.jpg",ndvi:"fonds/ndvi.jpg",wc:"fonds/wc.png"};
+function setFond(f){
+ const im=$("fond");if(!im)return;
+ if(f==="plan"){im.style.display="none"}else{im.setAttribute("href",IMG[f]);im.style.display=""}
+ svg.classList.toggle("raster",f!=="plan");svg.closest(".mapbox").classList.toggle("raster",f!=="plan");
+ document.querySelectorAll(".fonds button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.f===f)));
+ $("lfond").innerHTML=FONDS[f];
+ try{localStorage.setItem("ev_fond",f)}catch(e){}
+}
+function fitQuart(){
+ if(!st.quart){setVB(full.slice());return}
+ const p=D.filter(d=>d.q===st.quart),xs=p.map(d=>d.x),ys=p.map(d=>d.y),m=50;
+ const x0=Math.min(...xs)-m,y0=Math.min(...ys)-m,w=Math.max(...xs)-x0+m,h=Math.max(...ys)-y0+m;
+ setVB([x0,y0,Math.max(w,120),Math.max(h,120)]);
+}
+
+Promise.all([fetch("data.json").then(r=>r.json()),fetch("geo.json").then(r=>r.json())]).then(([d,g])=>{
+ D=d;G=g;controls();kpis();drawMap();drawQuart();bind();filt();
+ let f0="s2";try{f0=localStorage.getItem("ev_fond")||"s2"}catch(e){}
+ setFond(IMG[f0]||f0==="plan"?f0:"s2");
+ show(D.reduce((a,b)=>b.s>a.s?b:a),false);
+}).catch(e=>{$("panel").innerHTML=`<p class="empty">Les données n'ont pas pu être chargées (${esc(e.message)}).</p>`});
+}
+</script>
+</body>
+</html>
