@@ -1,0 +1,32 @@
+{
+ "name": "Espaces verts de Tlemcen",
+ "short_name": "Espaces verts",
+ "description": "Atlas interactif des 176 espaces verts de la commune de Tlemcen : carte, fiches, photos et fonds Google Earth Engine.",
+ "lang": "fr",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "orientation": "any",
+ "background_color": "#f2f5ec",
+ "theme_color": "#17402c",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}

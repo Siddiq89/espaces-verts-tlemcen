@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Espaces verts de Tlemcen</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#17402c">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -90,11 +95,32 @@ footer{background:var(--deep);color:var(--deepink)}footer p{max-width:75ch;opaci
 @media(max-width:900px){.atlas{grid-template-columns:minmax(0,1fr)}.mapbox{height:70vh}}
 @media(max-width:600px){.qrow{grid-template-columns:minmax(0,1fr) 5.5em;row-gap:4px}.qrow .bar{grid-column:1/-1;order:3}.qrow .hide{display:none}dl{grid-template-columns:7em minmax(0,1fr)}}
 @media(prefers-reduced-motion:no-preference){.ring{animation:pulse 1.6s ease-out infinite}@keyframes pulse{from{stroke-opacity:1}to{stroke-opacity:.15}}}
+/* mises a jour */
+.add{background:var(--deep);color:var(--deepink);border-color:var(--deep);font-weight:600;cursor:pointer}
+.badge{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--ochre);color:#fff;margin-left:6px}
+details.hist{margin-top:10px;font-size:14px}details.hist li{margin:4px 0}
+#edit{width:min(620px,94vw)}#edit form{padding:18px;display:grid;gap:12px}
+#edit h3{font-size:20px}
+.fg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+#edit label{display:grid;gap:4px;font-size:14px;color:var(--mute)}
+#edit input,#edit select,#edit textarea{width:100%;color:var(--ink)}
+#edit textarea{min-height:80px;padding:10px 12px;font:inherit;font-size:16px;background:var(--card);border:1px solid var(--line);border-radius:8px}
+#edit .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+#edit .act{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+#fmsg{min-height:1.4em;font-size:14px}#fmsg.err{color:var(--D)}#fmsg.ok{color:var(--E)}
+#fprev{max-height:160px;border-radius:8px;display:none}
+.pickbar{position:absolute;left:50%;top:60px;transform:translateX(-50%);background:var(--ochre);color:#fff;padding:10px 14px;border-radius:10px;font-weight:600;display:none;gap:10px;align-items:center;z-index:2}
+.pickbar button{min-height:36px;background:#fff;color:#000}
+.journal{list-style:none;padding:0;margin:14px 0 0}
+.journal li{display:grid;grid-template-columns:9em minmax(0,1fr);gap:10px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.journal time{color:var(--mute);font-size:14px;font-variant-numeric:tabular-nums}
+.sync{font-size:13px;color:var(--mute)}
+@media(max-width:600px){.fg{grid-template-columns:minmax(0,1fr)}.journal li{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body>
 <header>
- <nav aria-label="Navigation"><b>Atlas des espaces verts · Tlemcen</b><a href="#carte">Carte</a><a href="#quartiers">Quartiers</a><a href="#galerie">Galerie</a><a href="#sources">Sources</a></nav>
+ <nav aria-label="Navigation"><b>Atlas des espaces verts · Tlemcen</b><a href="#carte">Carte</a><a href="#quartiers">Quartiers</a><a href="#galerie">Galerie</a><a href="#journal">Mises à jour</a><a href="#sources">Sources</a><button class="add" id="authbtn" style="min-height:40px">Se connecter</button></nav>
 </header>
 <section class="hero">
  <div class="wrap">
@@ -112,6 +138,7 @@ footer{background:var(--deep);color:var(--deepink)}footer p{max-width:75ch;opaci
    <select id="fc" aria-label="Classement"><option value="">Tous les classements</option></select>
    <span id="chips"></span>
    <span class="count" id="count"></span>
+   <button class="add" id="addbtn">＋ Ajouter un espace vert</button>
   </div>
   <div class="atlas">
    <div class="mapbox">
@@ -119,6 +146,7 @@ footer{background:var(--deep);color:var(--deepink)}footer p{max-width:75ch;opaci
     <div class="fonds" role="group" aria-label="Fond de carte"><button data-f="plan" aria-pressed="true">Plan</button><button data-f="s2" aria-pressed="false">Satellite</button><button data-f="ndvi" aria-pressed="false">NDVI</button><button data-f="wc" aria-pressed="false">Occupation</button></div>
     <div class="zoom"><button id="zin" aria-label="Zoomer">+</button><button id="zout" aria-label="Dézoomer">−</button><button id="zre" aria-label="Vue entière">⤢</button></div>
     <div class="legend" id="legend"></div>
+    <div class="pickbar" id="pickbar">Touchez la carte pour placer le point <button id="pickcancel">Annuler</button></div>
    </div>
    <article class="panel" id="panel" aria-live="polite"></article>
   </div>
@@ -142,6 +170,14 @@ footer{background:var(--deep);color:var(--deepink)}footer p{max-width:75ch;opaci
  </div>
 </section>
 
+<section class="band q-band" id="journal">
+ <div class="wrap">
+  <h2>Journal des mises à jour</h2>
+  <p class="note">Chaque ajout ou correction est enregistré à la suite des autres : la version d'origine du mémoire et toutes les versions précédentes sont conservées. <span class="sync" id="sync"></span></p>
+  <ol class="journal" id="jlist"></ol>
+ </div>
+</section>
+
 <footer class="band" id="sources">
  <div class="wrap">
   <h2>Sources et notes</h2>
@@ -151,8 +187,51 @@ footer{background:var(--deep);color:var(--deepink)}footer p{max-width:75ch;opaci
  </div>
 </footer>
 
+<dialog id="edit"><form id="fedit" novalidate>
+ <h3 id="ftitle">Ajouter un espace vert</h3>
+ <p class="note" id="fsub"></p>
+ <label>Nom de l'espace vert<input name="nom" required maxlength="200"></label>
+ <div class="fg">
+  <label>Quartier<select name="secteur"></select></label>
+  <label>Superficie (m²)<input name="surface_m2" type="number" min="0" step="1" inputmode="numeric"></label>
+ </div>
+ <div class="fg">
+  <label>Latitude<input name="lat" type="number" step="0.000001" inputmode="decimal"></label>
+  <label>Longitude<input name="lon" type="number" step="0.000001" inputmode="decimal"></label>
+ </div>
+ <div class="row"><button type="button" id="fpick">Choisir sur la carte</button><button type="button" id="fgps">Ma position GPS</button></div>
+ <div class="fg">
+  <label>État<select name="etat"><option>Excellent</option><option>Bon</option><option selected>Moyen</option><option>Dégradé</option></select></label>
+  <label>Classement (loi 07-06)<select name="classement"></select></label>
+ </div>
+ <div class="fg">
+  <label>Éclairage<select name="eclairage"><option>Présent</option><option>Insuffisant</option><option>Absent</option></select></label>
+  <label>Irrigation<select name="irrigation"><option value="non">Non signalée</option><option value="oui">Système présent</option></select></label>
+ </div>
+ <label>Mobilier<input name="mobilier" maxlength="500"></label>
+ <label>Espèces dominantes<input name="especes" maxlength="500"></label>
+ <label>Description / observations<textarea name="explication" maxlength="2000"></textarea></label>
+ <label>Photo (facultatif)<input name="photo" type="file" accept="image/*" capture="environment"></label>
+ <img id="fprev" alt="Aperçu de la photo">
+ <p class="note">Enregistré au nom de <b id="fwho"></b>. <button type="button" id="flogout" style="min-height:32px;font-size:13px">Changer de compte</button></p>
+ <label>Motif de la mise à jour<input name="commentaire" maxlength="1000" placeholder="ex. visite de terrain du 24/11/2026"></label>
+ <p id="fmsg" role="status"></p>
+ <div class="act"><button type="button" id="fcancel">Annuler</button><button type="submit" class="add" id="fsave">Enregistrer</button></div>
+</form></dialog>
+
+<dialog id="login"><form id="flogin" novalidate style="padding:18px;display:grid;gap:12px;width:min(420px,90vw)">
+ <h3>Connexion</h3>
+ <p class="note">Réservé aux personnes autorisées à mettre à jour l'atlas. La consultation reste libre.</p>
+ <label style="display:grid;gap:4px;font-size:14px;color:var(--mute)">Nom d'utilisateur<input name="nom" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+ <label style="display:grid;gap:4px;font-size:14px;color:var(--mute)">Mot de passe<input name="mdp" type="password" autocomplete="current-password"></label>
+ <label style="display:flex;gap:8px;align-items:center;font-size:15px"><input name="rester" type="checkbox" style="min-height:auto;width:20px;height:20px" checked> Rester connecté sur cet appareil</label>
+ <p id="lmsg" role="status" style="min-height:1.4em;font-size:14px;color:var(--D)"></p>
+ <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" id="lcancel">Annuler</button><button type="submit" class="add" id="lok">Se connecter</button></div>
+</form></dialog>
+
 <dialog id="dlg"><img id="dimg" alt=""><div class="cap"><span id="dcap"></span><button id="dclose">Fermer</button></div></dialog>
 
+<script src="config.js"></script>
 <script>
 {
 const ETATS=[["Excellent","var(--E)"],["Bon","var(--B)"],["Moyen","var(--M)"],["Dégradé","var(--D)"]];
@@ -168,7 +247,11 @@ H:["Oudjlida",508,95,"start"],I:["Boudjlida",172,106,"middle"],J:["El Koudia",17
 const $=id=>document.getElementById(id);
 const fmt=n=>Math.round(n).toLocaleString("fr-FR");
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-let D=[],G=null,sel=null,shown=[],gN=24;
+let D=[],G=null,sel=null,shown=[],gN=24,BASE=[],MODS=[],pickMode=false,editing=null,TOK=null,USER=null,afterLogin=null;
+const CFG=window.EV_CONFIG||{url:"",key:""};
+const ONLINE=!!(CFG.url&&CFG.key);
+const PHOTOS=new Map();
+const NOPHOTO="data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 3"><rect width="4" height="3" fill="#cfe0bf"/><text x="2" y="1.75" font-size=".42" text-anchor="middle" fill="#4d5e54" font-family="sans-serif">Pas de photo</text></svg>');
 const st={q:"",quart:"",cl:"",etats:new Set(ETATS.map(e=>e[0]))};
 const svg=$("map");let vb=null,full=null;
 
@@ -220,29 +303,33 @@ function drawMap(){
 function show(d,center){
  sel=d;drawPts();
  const surf=fmt(d.s)+" m²";
- $("panel").innerHTML=`<img class="ph" src="${d.c}_v.jpg" alt="Photo de ${esc(d.n)}" id="ph">
- <h3>${esc(d.n)}</h3>
- <div><span class="tag" style="background:${COL[d.e]}">${esc(d.e)}</span><span class="note">${d.c} · ${esc(Q[d.q][0])}</span></div>
+ $("panel").innerHTML=`<img class="ph" src="${thumb(d)}" alt="Photo de ${esc(d.n)}" id="ph">
+ <h3>${esc(d.n)}${d.nouveau?'<span class="badge">Nouveau</span>':d.hist.length?'<span class="badge">Mis à jour</span>':""}</h3>
+ <div><span class="tag" style="background:${COL[d.e]||"#999"}">${esc(d.e)}</span><span class="note">${d.c} · ${esc((Q[d.q]||["?"])[0])}</span></div>
  <dl><dt>Superficie</dt><dd>${surf}</dd><dt>Classement</dt><dd>${esc(d.cl)}</dd>
  <dt>Éclairage</dt><dd>${esc(d.ec)}</dd><dt>Irrigation</dt><dd>${d.ir==="oui"?"Système présent":"Non signalé"}</dd>
  <dt>Mobilier</dt><dd>${esc(d.mo)}</dd><dt>Espèces</dt><dd>${esc(d.es)}</dd>
- <dt>Coordonnées</dt><dd>${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}</dd></dl>
+ <dt>Coordonnées</dt><dd>${(+d.lat).toFixed(6)}, ${(+d.lon).toFixed(6)}</dd></dl>
  <p>${esc(d.ex)}</p>
- <div class="btns"><button id="big">Agrandir la photo</button><a href="https://www.google.com/maps?q=${d.lat},${d.lon}" target="_blank" rel="noopener">Voir sur Google Maps</a></div>
- <p class="note">Source : mémoire, Tableau 06, p. ${d.p}.</p>`;
+ <div class="btns"><button id="big">Agrandir la photo</button><button id="upd" class="add">✎ Mettre à jour la fiche</button><a href="https://www.google.com/maps?q=${d.lat},${d.lon}" target="_blank" rel="noopener">Voir sur Google Maps</a></div>
+ <p class="note">${d.p?`Version d'origine : mémoire, Tableau 06, p. ${d.p}.`:`Espace ajouté après le mémoire.`}</p>
+ ${histHTML(d)}`;
  $("ph").onclick=$("big").onclick=()=>openPhoto(d);
+ $("upd").onclick=()=>openEdit(d);
+ if(d.photoId)loadPhoto(d).then(u=>{if(sel===d&&$("ph"))$("ph").src=u});
  if(center){const w=Math.min(vb[2],260),h=w*vb[3]/vb[2];setVB([d.x-w/2,d.y-h/2,w,h]);}
 }
 function openPhoto(d){
- $("dimg").src=d.c+".jpg";$("dimg").alt="Photo de "+d.n;
+ $("dimg").src=d.photoId?(PHOTOS.get(d.photoId)||NOPHOTO):d.p?d.c+".jpg":NOPHOTO;if(d.photoId)loadPhoto(d).then(u=>$("dimg").src=u);$("dimg").alt="Photo de "+d.n;
  $("dcap").textContent=d.c+" – "+d.n;try{$("dlg").showModal()}catch(e){$("dlg").setAttribute("open","")}
 }
 
 function drawGrid(){
  $("gnote").textContent=shown.length?`${shown.length} sites selon les filtres de la carte.`:"";
- $("grid").innerHTML=shown.length?shown.slice(0,gN).map(d=>`<button class="card" data-c="${d.c}"><img loading="lazy" src="${d.c}_v.jpg" alt=""><div><b>${esc(d.n)}</b>${d.c} · ${fmt(d.s)} m² · <span style="color:${COL[d.e]};font-weight:600">${d.e}</span></div></button>`).join("")
+ $("grid").innerHTML=shown.length?shown.slice(0,gN).map(d=>`<button class="card" data-c="${d.c}"><img loading="lazy" src="${thumb(d)}" data-pid="${d.photoId||""}" alt=""><div><b>${esc(d.n)}</b>${d.c} · ${fmt(d.s)} m² · <span style="color:${COL[d.e]};font-weight:600">${d.e}</span></div></button>`).join("")
   :`<p class="empty">Aucun site ne correspond. Élargissez la recherche ou réactivez un état.</p>`;
  $("more").style.display=shown.length>gN?"block":"none";
+ $("grid").querySelectorAll("img[data-pid]:not([data-pid=''])").forEach(im=>{const d=D.find(x=>String(x.photoId)===im.dataset.pid);if(d)loadPhoto(d).then(u=>im.src=u)});
 }
 
 function drawQuart(){
@@ -255,7 +342,8 @@ function drawQuart(){
 
 function kpis(){
  const tot=D.reduce((a,d)=>a+d.s,0),deg=D.filter(d=>d.e==="Dégradé").length;
- $("kpis").innerHTML=`<div><strong>176</strong>sites inventoriés (217 espaces)</div><div><strong>${(tot/10000).toFixed(1).replace(".",",")} ha</strong>de surface verte</div><div><strong>${deg}</strong>sites dégradés (${Math.round(deg/D.length*100)} %)</div><div><strong>0,26 m²</strong>par habitant à Aboutechfine</div>`;
+ const nv=D.filter(d=>d.nouveau).length;
+ $("kpis").innerHTML=`<div><strong>${D.length}</strong>sites inventoriés${nv?` (dont ${nv} ajouté${nv>1?"s":""})`:" (217 espaces)"}</div><div><strong>${(tot/10000).toFixed(1).replace(".",",")} ha</strong>de surface verte</div><div><strong>${deg}</strong>sites dégradés (${Math.round(deg/D.length*100)} %)</div><div><strong>0,26 m²</strong>par habitant à Aboutechfine</div>`;
 }
 
 function controls(){
@@ -274,7 +362,7 @@ function bind(){
   on?st.etats.delete(b.dataset.e):st.etats.add(b.dataset.e);filt()});
  const pick=e=>{const c=e.target.closest("[data-c]");if(c){show(D.find(d=>d.c===c.dataset.c),e.currentTarget===$("grid"));
   if(e.currentTarget===$("grid"))$("carte").scrollIntoView({behavior:"smooth"})}};
- svg.addEventListener("click",e=>{if(!moved)pick(e)});
+ svg.addEventListener("click",e=>{if(moved)return;if(pickMode){const p=toSvg(e);setPos(...unproj(p.x,p.y));endPick(true);return}pick(e)});
  svg.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();pick(e)}});
  $("grid").addEventListener("click",pick);
  $("more").onclick=()=>{gN+=24;drawGrid()};
@@ -292,6 +380,19 @@ function bind(){
  const up=()=>{drag=null;svg.classList.remove("drag")};
  svg.addEventListener("pointerup",up);svg.addEventListener("pointerleave",up);
  const ro=new ResizeObserver(()=>{if(vb)setVB(vb)});ro.observe(svg);
+ $("addbtn").onclick=()=>openEdit(null);
+ $("fcancel").onclick=()=>$("edit").close();
+ $("fpick").onclick=()=>{$("edit").close();pickMode=true;$("pickbar").style.display="flex";$("carte").scrollIntoView({behavior:"smooth"})};
+ $("pickcancel").onclick=()=>endPick(false);
+ $("fgps").onclick=()=>{msg("Recherche de la position…");if(!navigator.geolocation)return msg("GPS indisponible sur cet appareil.",1);
+  navigator.geolocation.getCurrentPosition(p=>{setPos(p.coords.longitude,p.coords.latitude);msg(`Position GPS (précision ${Math.round(p.coords.accuracy)} m).`)},()=>msg("Position refusée ou indisponible.",1),{enableHighAccuracy:true,timeout:15000})};
+ $("fedit").photo.onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const u=await compress(f);$("fprev").src=u;$("fprev").style.display="block";$("fedit").dataset.photo=u}catch(err){msg("Photo illisible.",1)}};
+ $("fedit").addEventListener("submit",save);
+ $("flogin").addEventListener("submit",doLogin);
+ $("lcancel").onclick=()=>{afterLogin=null;$("login").close()};
+ $("authbtn").onclick=()=>USER?logout(false):openLogin(null);
+ $("flogout").onclick=()=>{$("edit").close();logout(false);openLogin(()=>openEdit(editing))};
+ $("jlist").addEventListener("click",e=>{const li=e.target.closest("[data-c]");if(li){const d=D.find(x=>x.c===li.dataset.c);if(d){show(d,true);$("carte").scrollIntoView({behavior:"smooth"})}}});
 }
 const FONDS={
  plan:"",
@@ -307,6 +408,141 @@ function setFond(f){
  $("lfond").innerHTML=FONDS[f];
  try{localStorage.setItem("ev_fond",f)}catch(e){}
 }
+// ---------- mises a jour partagees (Supabase) ----------
+function proj(lon,lat){const P=G.proj;return[+((lon*P.k-P.minx)*P.s+P.pad).toFixed(1),+((-lat-P.miny)*P.s+P.pad).toFixed(1)]}
+function unproj(x,y){const P=G.proj;return[((x-P.pad)/P.s+P.minx)/P.k,-((y-P.pad)/P.s+P.miny)]}
+function thumb(d){return d.photoId?(PHOTOS.get(d.photoId)||NOPHOTO):d.p?`${d.c}_v.jpg`:NOPHOTO}
+function hdr(){const h={apikey:CFG.key,"Content-Type":"application/json"};if(/^eyJ/.test(CFG.key))h.Authorization="Bearer "+CFG.key;return h}
+async function loadPhoto(d){
+ if(PHOTOS.has(d.photoId))return PHOTOS.get(d.photoId);
+ const r=await fetch(`${CFG.url}/rest/v1/ev_modifications?id=eq.${d.photoId}&select=photo`,{headers:hdr()});
+ const j=await r.json();const u=(j[0]&&j[0].photo)||NOPHOTO;PHOTOS.set(d.photoId,u);return u;
+}
+async function loadMods(){
+ if(!ONLINE){$("sync").textContent="Base de mises à jour non configurée : lecture seule.";return}
+ try{
+  const r=await fetch(`${CFG.url}/rest/v1/ev_modifications?select=id,code,type,nom,secteur,lat,lon,surface_m2,classement,etat,irrigation,eclairage,mobilier,especes,explication,auteur,commentaire,created_at,a_photo&order=created_at.asc,id.asc`,{headers:hdr()});
+  if(!r.ok)throw new Error(r.status);
+  MODS=await r.json();try{localStorage.setItem("ev_mods",JSON.stringify(MODS))}catch(e){}
+  $("sync").textContent=`Synchronisé : ${MODS.length} mise${MODS.length>1?"s":""} à jour.`;
+ }catch(e){
+  try{MODS=JSON.parse(localStorage.getItem("ev_mods")||"[]")}catch(_){MODS=[]}
+  $("sync").textContent="Hors ligne : dernières mises à jour connues affichées.";
+ }
+}
+const CHAMPS={nom:"n",secteur:"q",lat:"lat",lon:"lon",surface_m2:"s",classement:"cl",etat:"e",irrigation:"ir",eclairage:"ec",mobilier:"mo",especes:"es",explication:"ex"};
+function merge(){
+ const by=new Map(BASE.map(d=>[d.c,Object.assign({},d,{hist:[]})]));
+ for(const m of MODS){
+  let d=by.get(m.code);
+  if(!d){d={c:m.code,n:"Sans nom",q:"C",x:0,y:0,lat:0,lon:0,s:0,cl:"Non classé et non inventorié",e:"Moyen",ir:"non",ec:"",mo:"",es:"",ex:"",p:null,nouveau:true,hist:[]};by.set(m.code,d)}
+  for(const[k,f]of Object.entries(CHAMPS))if(m[k]!==null&&m[k]!==undefined&&m[k]!=="")d[f]=m[k];
+  if(m.a_photo)d.photoId=m.id;
+  d.hist.push(m);
+ }
+ for(const d of by.values())if(d.hist.length&&d.lat&&d.lon){const[x,y]=proj(+d.lon,+d.lat);d.x=x;d.y=y}
+ D=[...by.values()].filter(d=>d.lat&&d.lon);
+}
+function histHTML(d){
+ if(!d.hist.length)return"";
+ const li=d.hist.slice().reverse().map(m=>`<li><b>${new Date(m.created_at).toLocaleDateString("fr-FR")}</b> · ${m.type==="ajout"?"ajout":"mise à jour"}${m.auteur?` par ${esc(m.auteur)}`:""}${m.commentaire?` — ${esc(m.commentaire)}`:""}</li>`).join("");
+ return `<details class="hist"><summary>Historique (${d.hist.length} version${d.hist.length>1?"s":""} + l'original)</summary><ol>${li}${d.p?"<li>Version d'origine : mémoire (Tableau 06)</li>":""}</ol></details>`;
+}
+function drawJournal(){
+ const last=MODS.slice().reverse().slice(0,30);
+ $("jlist").innerHTML=last.length?last.map(m=>{const d=D.find(x=>x.c===m.code);return `<li data-c="${esc(m.code)}"><time>${new Date(m.created_at).toLocaleString("fr-FR",{dateStyle:"short",timeStyle:"short"})}</time><span><b>${esc(m.code)}</b> ${esc(d?d.n:"")} · ${m.type==="ajout"?"nouvel espace":"mise à jour"}${m.auteur?` par ${esc(m.auteur)}`:""}${m.commentaire?` — ${esc(m.commentaire)}`:""}</span></li>`}).join("")
+  :`<li style="cursor:default"><span class="note">Aucune mise à jour pour l'instant : les 176 fiches sont celles du mémoire.</span></li>`;
+}
+function compress(file){
+ return new Promise((res,rej)=>{
+  const fr=new FileReader();
+  fr.onerror=rej;
+  fr.onload=()=>{const img=new Image();img.onerror=rej;img.onload=()=>{
+   const k=Math.min(1,1280/Math.max(img.width,img.height)),c=document.createElement("canvas");
+   c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+   let q=0.75,u=c.toDataURL("image/jpeg",q);while(u.length>900000&&q>0.35){q-=0.1;u=c.toDataURL("image/jpeg",q)}
+   res(u)};img.src=fr.result};
+  fr.readAsDataURL(file);
+ });
+}
+// ---------- comptes
+function store(){try{return localStorage.getItem("ev_jeton")?localStorage:sessionStorage}catch(e){return null}}
+async function rpc(fn,body){
+ const r=await fetch(`${CFG.url}/rest/v1/rpc/${fn}`,{method:"POST",headers:hdr(),body:JSON.stringify(body)});
+ const j=await r.json().catch(()=>({}));
+ if(!r.ok)throw new Error(j.message||("Erreur "+r.status));
+ return j;
+}
+function setUser(u){USER=u;$("authbtn").textContent=u?`${u.nom_affiche} · Déconnexion`:"Se connecter";$("authbtn").title=u?"Se déconnecter":"Se connecter pour mettre à jour"}
+async function checkSession(){
+ if(!ONLINE){$("authbtn").style.display="none";return}
+ let t=null;try{t=localStorage.getItem("ev_jeton")||sessionStorage.getItem("ev_jeton")}catch(e){}
+ if(!t)return setUser(null);
+ try{const j=await rpc("session_info",{p_jeton:t});if(j.ok){TOK=t;setUser(j)}else logout(true)}catch(e){TOK=t;setUser({nom_affiche:"Hors ligne"})}
+}
+function openLogin(then){
+ afterLogin=then||null;const f=$("flogin");f.mdp.value="";$("lmsg").textContent="";
+ try{$("login").showModal()}catch(e){$("login").setAttribute("open","")}setTimeout(()=>f.nom.focus(),50);
+}
+async function doLogin(e){
+ e.preventDefault();const f=$("flogin");
+ if(!f.nom.value.trim()||!f.mdp.value)return $("lmsg").textContent="Saisissez le nom d'utilisateur et le mot de passe.";
+ $("lok").disabled=true;$("lmsg").textContent="";
+ try{
+  const j=await rpc("connexion",{p_nom:f.nom.value.trim(),p_mdp:f.mdp.value});
+  if(!j.ok){$("lmsg").textContent=j.erreur||"Connexion refusée.";return}
+  TOK=j.jeton;try{(f.rester.checked?localStorage:sessionStorage).setItem("ev_jeton",TOK)}catch(_){}
+  setUser(j);$("login").close();f.mdp.value="";
+  if(afterLogin){const a=afterLogin;afterLogin=null;a()}
+ }catch(err){$("lmsg").textContent=err.message==="Failed to fetch"?"Pas de connexion internet.":err.message}
+ finally{$("lok").disabled=false}
+}
+function logout(silent){
+ if(TOK&&!silent)rpc("deconnexion",{p_jeton:TOK}).catch(()=>{});
+ TOK=null;try{localStorage.removeItem("ev_jeton");sessionStorage.removeItem("ev_jeton")}catch(e){}setUser(null);
+}
+function msg(t,err){$("fmsg").textContent=t;$("fmsg").className=err?"err":"ok"}
+function setPos(lon,lat){const f=$("fedit");f.lat.value=(+lat).toFixed(6);f.lon.value=(+lon).toFixed(6);
+ if(!editing){let best=null,bd=1e9;const[x,y]=proj(lon,lat);for(const d of BASE){const k=(d.x-x)**2+(d.y-y)**2;if(k<bd){bd=k;best=d}}if(best)f.secteur.value=best.q}}
+function endPick(ok){pickMode=false;$("pickbar").style.display="none";try{$("edit").showModal()}catch(e){$("edit").setAttribute("open","")}if(ok)msg("Position choisie sur la carte.")}
+function openEdit(d){
+ if(ONLINE&&!USER)return openLogin(()=>openEdit(d));
+ const f=$("fedit");f.reset();delete f.dataset.photo;$("fprev").style.display="none";editing=d;
+ f.secteur.innerHTML=Object.keys(Q).map(k=>`<option value="${k}">${esc(Q[k][0])}</option>`).join("");
+ f.classement.innerHTML=[...new Set(D.map(x=>x.cl))].sort().map(c=>`<option>${esc(c)}</option>`).join("");
+ $("ftitle").textContent=d?`Mettre à jour ${d.c}`:"Ajouter un espace vert";
+ $("fsub").textContent=d?"Les valeurs actuelles sont pré-remplies. L'ancienne version reste dans l'historique.":"Le nouvel espace recevra un code EVN… automatiquement.";
+ if(d){f.nom.value=d.n;f.secteur.value=d.q;f.surface_m2.value=Math.round(d.s)||"";f.lat.value=(+d.lat).toFixed(6);f.lon.value=(+d.lon).toFixed(6);
+  f.etat.value=d.e;f.classement.value=d.cl;if(![...f.eclairage.options].some(o=>o.value===d.ec)&&d.ec)f.eclairage.insertAdjacentHTML("beforeend",`<option>${esc(d.ec)}</option>`);f.eclairage.value=d.ec||"Présent";
+  f.irrigation.value=d.ir==="oui"?"oui":"non";f.mobilier.value=d.mo==="Aucun"?"":d.mo;f.especes.value=d.es==="Non précisé"?"":d.es;f.explication.value=d.ex||""}
+ $("fwho").textContent=USER?USER.nom_affiche:"";
+ if(!ONLINE)msg("Base de mises à jour non configurée : enregistrement impossible pour l'instant.",1);else msg("");
+ try{$("edit").showModal()}catch(e){$("edit").setAttribute("open","")}
+}
+async function save(e){
+ e.preventDefault();const f=$("fedit");
+ if(!ONLINE)return msg("Base de mises à jour non configurée (config.js).",1);
+ if(!f.nom.value.trim())return msg("Indiquez le nom de l'espace vert.",1);
+ const lat=+f.lat.value,lon=+f.lon.value;
+ if(!(lat>34.7&&lat<35.1&&lon>-1.6&&lon<-1.1))return msg("Position manquante ou hors de Tlemcen : utilisez la carte ou le GPS.",1);
+ if(!TOK)return openLogin(()=>$("edit").showModal());
+ const p={type:editing?"modification":"ajout",code:editing?editing.c:"",nom:f.nom.value.trim(),secteur:f.secteur.value,lat:String(lat),lon:String(lon),
+  surface_m2:f.surface_m2.value,classement:f.classement.value,etat:f.etat.value,irrigation:f.irrigation.value,eclairage:f.eclairage.value,
+  mobilier:f.mobilier.value.trim(),especes:f.especes.value.trim(),explication:f.explication.value.trim(),photo:f.dataset.photo||"",
+  commentaire:f.commentaire.value.trim()};
+ $("fsave").disabled=true;msg("Enregistrement…");
+ try{
+  const j=await rpc("ajouter_modification",{p_jeton:TOK,p});
+  if(p.photo&&j.id)PHOTOS.set(j.id,p.photo);
+  await loadMods();merge();filt();kpis();drawQuart();drawJournal();
+  const d=D.find(x=>x.c===j.code);if(d)show(d,true);
+  msg(`Enregistré (${j.code}). L'existant est conservé.`);setTimeout(()=>$("edit").close(),900);
+ }catch(err){
+  if(/Session/.test(err.message)){logout(true);$("edit").close();openLogin(()=>{$("edit").showModal();msg("Reconnecté : cliquez à nouveau sur Enregistrer.")});return}
+  msg(err.message==="Failed to fetch"?"Pas de connexion internet : réessayez plus tard.":err.message,1)}
+ finally{$("fsave").disabled=false}
+}
+
 function fitQuart(){
  if(!st.quart){setVB(full.slice());return}
  const p=D.filter(d=>d.q===st.quart),xs=p.map(d=>d.x),ys=p.map(d=>d.y),m=50;
@@ -315,11 +551,18 @@ function fitQuart(){
 }
 
 Promise.all([fetch("data.json").then(r=>r.json()),fetch("geo.json").then(r=>r.json())]).then(([d,g])=>{
- D=d;G=g;controls();kpis();drawMap();drawQuart();bind();filt();
+ BASE=d;D=d.map(x=>Object.assign({hist:[]},x));G=g;controls();kpis();drawMap();drawQuart();bind();filt();drawJournal();
+ checkSession();
+ loadMods().then(()=>{merge();filt();kpis();drawQuart();drawJournal();if(sel){const s2=D.find(x=>x.c===sel.c);if(s2)show(s2,false)}});
  let f0="s2";try{f0=localStorage.getItem("ev_fond")||"s2"}catch(e){}
  setFond(IMG[f0]||f0==="plan"?f0:"s2");
  show(D.reduce((a,b)=>b.s>a.s?b:a),false);
 }).catch(e=>{$("panel").innerHTML=`<p class="empty">Les données n'ont pas pu être chargées (${esc(e.message)}).</p>`});
+}
+</script>
+<script>
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  try { navigator.serviceWorker.register("sw.js").catch(function () {}); } catch (e) {}
 }
 </script>
 </body>
