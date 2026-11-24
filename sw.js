@@ -1,7 +1,7 @@
 // Service worker : appli utilisable hors ligne, toujours a jour en ligne.
 // Pages et donnees : reseau d'abord (les mises a jour arrivent tout de suite),
 // images : cache d'abord. Les appels a la base Supabase ne sont jamais mis en cache ici.
-const CACHE = "ev-tlemcen-v3";
+const CACHE = "ev-tlemcen-v4";
 const CORE = ["./", "index.html", "config.js", "data.json", "geo.json", "manifest.webmanifest",
   "icon-192.png", "icon-512.png", "fonds/s2.jpg", "fonds/ndvi.jpg", "fonds/wc.png"];
 self.addEventListener("install", e => {

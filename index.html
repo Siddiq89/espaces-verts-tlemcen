@@ -116,6 +116,8 @@ details.hist{margin-top:10px;font-size:14px}details.hist li{margin:4px 0}
 .journal time{color:var(--mute);font-size:14px;font-variant-numeric:tabular-nums}
 .sync{font-size:13px;color:var(--mute)}
 @media(max-width:600px){.fg{grid-template-columns:minmax(0,1fr)}.journal li{grid-template-columns:minmax(0,1fr)}}
+.editeur{margin-top:22px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;background:#ffffff1a;border:1px solid #ffffff40;border-radius:12px;padding:12px 14px}
+.editeur .add{background:#f3d29a;color:#13201a;border-color:#f3d29a}
 </style>
 </head>
 <body>
@@ -127,6 +129,7 @@ details.hist{margin-top:10px;font-size:14px}details.hist li{margin:4px 0}
   <h1>Un jardin sur trois de Tlemcen est en état dégradé</h1>
   <p>Inventaire de terrain des espaces verts de la commune : 176 sites localisés, photographiés et décrits. Cliquez un point pour lire sa fiche, filtrez par quartier ou par état.</p>
   <div class="kpis" id="kpis"></div>
+  <div class="editeur" id="editeur"><span id="edmsg">Espace éditeur : connectez-vous pour ajouter ou mettre à jour des espaces verts.</span><button class="add" id="edlogin">Se connecter</button></div>
  </div>
 </section>
 
@@ -390,7 +393,7 @@ function bind(){
  $("fedit").addEventListener("submit",save);
  $("flogin").addEventListener("submit",doLogin);
  $("lcancel").onclick=()=>{afterLogin=null;$("login").close()};
- $("authbtn").onclick=()=>USER?logout(false):openLogin(null);
+ $("authbtn").onclick=$("edlogin").onclick=()=>USER?logout(false):openLogin(null);
  $("flogout").onclick=()=>{$("edit").close();logout(false);openLogin(()=>openEdit(editing))};
  $("jlist").addEventListener("click",e=>{const li=e.target.closest("[data-c]");if(li){const d=D.find(x=>x.c===li.dataset.c);if(d){show(d,true);$("carte").scrollIntoView({behavior:"smooth"})}}});
 }
@@ -473,9 +476,9 @@ async function rpc(fn,body){
  if(!r.ok)throw new Error(j.message||("Erreur "+r.status));
  return j;
 }
-function setUser(u){USER=u;$("authbtn").textContent=u?`${u.nom_affiche} · Déconnexion`:"Se connecter";$("authbtn").title=u?"Se déconnecter":"Se connecter pour mettre à jour"}
+function setUser(u){USER=u;if($("edmsg")){$("edmsg").textContent=u?`Connecté en tant que ${u.nom_affiche} : vous pouvez ajouter un espace vert ou mettre à jour une fiche.`:"Espace éditeur : connectez-vous pour ajouter ou mettre à jour des espaces verts.";$("edlogin").textContent=u?"Se déconnecter":"Se connecter"}$("authbtn").textContent=u?`${u.nom_affiche} · Déconnexion`:"Se connecter";$("authbtn").title=u?"Se déconnecter":"Se connecter pour mettre à jour"}
 async function checkSession(){
- if(!ONLINE){$("authbtn").style.display="none";return}
+ if(!ONLINE){$("authbtn").style.display="none";$("editeur").style.display="none";return}
  let t=null;try{t=localStorage.getItem("ev_jeton")||sessionStorage.getItem("ev_jeton")}catch(e){}
  if(!t)return setUser(null);
  try{const j=await rpc("session_info",{p_jeton:t});if(j.ok){TOK=t;setUser(j)}else logout(true)}catch(e){TOK=t;setUser({nom_affiche:"Hors ligne"})}
